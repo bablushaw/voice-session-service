@@ -1,0 +1,100 @@
+# MongoDB 7 three-member replica set (name: rs0) for local development.
+# Ports match voice-session-service .env: 27017, 27018, 27019.
+#
+# Start: docker compose up -d
+# Stop:  docker compose down
+#
+# Linux (Docker Engine): extra_hosts host-gateway is required so containers
+# can reach host.docker.internal. Docker Desktop (Windows/Mac) already provides it.
+
+services:
+  mongo-rs0-1:
+    image: mongo:7.0
+    container_name: mongo-rs0-1
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_rs0_1_data:/data/db
+    networks:
+      - mongo_rs0_net
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', 'localhost:27017/test', '--eval', 'db.runCommand({ ping: 1 }).ok']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  mongo-rs0-2:
+    image: mongo:7.0
+    container_name: mongo-rs0-2
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+    ports:
+      - '27018:27017'
+    volumes:
+      - mongo_rs0_2_data:/data/db
+    networks:
+      - mongo_rs0_net
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', 'localhost:27017/test', '--eval', 'db.runCommand({ ping: 1 }).ok']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  mongo-rs0-3:
+    image: mongo:7.0
+    container_name: mongo-rs0-3
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+    ports:
+      - '27019:27017'
+    volumes:
+      - mongo_rs0_3_data:/data/db
+    networks:
+      - mongo_rs0_net
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', 'localhost:27017/test', '--eval', 'db.runCommand({ ping: 1 }).ok']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  mongo-rs0-init:
+    image: mongo:7.0
+    container_name: mongo-rs0-init
+    depends_on:
+      mongo-rs0-1:
+        condition: service_healthy
+      mongo-rs0-2:
+        condition: service_healthy
+      mongo-rs0-3:
+        condition: service_healthy
+    networks:
+      - mongo_rs0_net
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - ./scripts/init-replica-set.js:/init-replica-set.js:ro
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        sleep 3
+        mongosh --quiet "mongodb://mongo-rs0-1:27017/admin" /init-replica-set.js
+    restart: on-failure
+
+networks:
+  mongo_rs0_net:
+    driver: bridge
+
+volumes:
+  mongo_rs0_1_data:
+  mongo_rs0_2_data:
+  mongo_rs0_3_data:

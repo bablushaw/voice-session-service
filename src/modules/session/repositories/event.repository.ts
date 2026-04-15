@@ -19,25 +19,30 @@ export class EventRepository {
     private readonly eventModel: Model<ConversationEvent>,
   ) {}
 
-  async insertEvent(input: CreateEventInput): Promise<ConversationEvent > {
-    const doc = await this.eventModel.findOneAndUpdate(
-      { sessionId: input.sessionId, eventId: input.eventId },
-      {
-        $setOnInsert: {
-          sessionId: input.sessionId,
-          eventId: input.eventId,
-          type: input.type,
-          payload: input.payload,
-          timestamp: input.timestamp,
-        },
-      },
-      {
-        new: true,
-        upsert: true,
-      },
-    );
-    
-    return doc!.toObject();
+  async insertEvent(input: CreateEventInput): Promise<{ created: boolean; event: ConversationEvent }> {
+    try {
+      const doc = await this.eventModel.create({
+        sessionId: input.sessionId,
+        eventId: input.eventId,
+        type: input.type,
+        payload: input.payload,
+        timestamp: input.timestamp,
+      });
+      return { created: true, event: doc.toObject() };
+    } catch (err: unknown) {
+      const code = (err as { code?: number }).code;
+      if (code === 11000) {
+        const existing = await this.eventModel
+          .findOne({ sessionId: input.sessionId, eventId: input.eventId })
+          .lean()
+          .exec();
+        if (!existing) {
+          throw err;
+        }
+        return { created: false, event: existing as ConversationEvent };
+      }
+      throw err;
+    }
   }
 
   async countBySessionId(sessionId: string): Promise<number> {

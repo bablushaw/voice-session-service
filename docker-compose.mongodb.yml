@@ -1,0 +1,45 @@
+services:
+  mongo-rs0-1:
+    image: mongo:7
+    container_name: mongo-rs0-1
+    hostname: mongo-rs0-1
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_rs0_1:/data/db
+    networks:
+      - mongo-rs
+
+  mongo-rs0-2:
+    image: mongo:7
+    container_name: mongo-rs0-2
+    hostname: mongo-rs0-2
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo_rs0_2:/data/db
+    networks:
+      - mongo-rs
+
+  mongo-rs0-3:
+    image: mongo:7
+    container_name: mongo-rs0-3
+    hostname: mongo-rs0-3
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo_rs0_3:/data/db
+    networks:
+      - mongo-rs
+
+volumes:
+  mongo_rs0_1:
+  mongo_rs0_2:
+  mongo_rs0_3:
+
+networks:
+  mongo-rs:
+    driver: bridge

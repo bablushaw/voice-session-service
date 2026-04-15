@@ -10,17 +10,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         const logger = new Logger('DatabaseModule');
 
         const mongoUri = configService.get<string>('MONGODB_URI');
-        const maxPoolSize = configService.get<number>('MONGODB_MAX_POOL_SIZE', 20);
-        const minPoolSize = configService.get<number>('MONGODB_MIN_POOL_SIZE', 10);
-        const commonOptions = {
-          maxPoolSize, // limit to 20 connections
-          minPoolSize,  // keep minimum ready connections
-          serverSelectionTimeoutMS: 5000,
-          socketTimeoutMS: 45000,
-        };
+
         if (mongoUri) {
           logger.log('Using MONGODB_URI for connection');
-          return { uri: mongoUri, ...commonOptions, };
+          return { uri: mongoUri };
         }
 
         const host = configService.get<string>('MONGODB_HOST', 'localhost');
@@ -38,10 +31,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
           logger.log(`Connecting to MongoDB without authentication: ${host}:${port}/${database}`);
         }
 
-        return { 
-          uri, 
-          ...commonOptions // apply pool config
-          };
+        return { uri };
       },
       inject: [ConfigService],
     }),

@@ -9,6 +9,9 @@ export type ConversationEventDocument = HydratedDocument<ConversationEvent>;
   timestamps: false,
 })
 export class ConversationEvent {
+  /** MongoDB document id (ObjectId). */
+  @Prop({ type: Types.ObjectId })
+  _id: Types.ObjectId;
 
   @Prop({ required: true, index: true })
   sessionId: string;
@@ -30,7 +33,4 @@ export const ConversationEventSchema = SchemaFactory.createForClass(Conversation
 
 /** Unique (sessionId, eventId) and sort-friendly index for pagination */
 ConversationEventSchema.index({ sessionId: 1, eventId: 1 }, { unique: true });
-// add index in reverse order for timestamp
-ConversationEventSchema.index({ sessionId: 1, timestamp: -1 });
-// create index for eventId count for pagination
-ConversationEventSchema.index({ eventId: 1 });
+ConversationEventSchema.index({ sessionId: 1, timestamp: 1 });

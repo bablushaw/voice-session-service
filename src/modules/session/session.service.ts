@@ -30,18 +30,11 @@ export class SessionService {
     private readonly eventRepository: EventRepository,
   ) {}
 
-  async createOrGetSession(dto: CreateSessionDto): Promise<ConversationSession | null> {
-    const {created, data} =  await this.sessionRepository.upsertSession(dto);
-    if(created) {
-      // store in redis with ttl like 30 min or set from config
-      // if competed or failed then remove from redis, or after ttl it automatically removed from redis
-      // it avoid DB access on every update of session, like check session exist, update session
-    }
-    return data;
+  async createOrGetSession(dto: CreateSessionDto): Promise<ConversationSession> {
+    return this.sessionRepository.upsertSession(dto);
   }
 
   async addEvent(sessionId: string, dto: AddEventDto): Promise<ConversationEvent> {
-    // first get session using sessionId from redis if not exist then get from DB 
     const session = await this.sessionRepository.findBySessionId(sessionId);
     if (!session) {
       throw new NotFoundException(`Session ${sessionId} not found`);
@@ -58,7 +51,7 @@ export class SessionService {
 
     const timestamp = dto.timestamp ? new Date(dto.timestamp) : new Date();
 
-    const event = await this.eventRepository.insertEvent({
+    const { event } = await this.eventRepository.insertEvent({
       sessionId,
       eventId: dto.eventId,
       type: dto.type,
@@ -66,9 +59,9 @@ export class SessionService {
       timestamp,
     });
 
-    const updated = await this.sessionRepository.transitionToActiveIfInitiated(sessionId);
-    // if updated then again set sessionId with updated value to redis
-    return event!;
+    await this.sessionRepository.transitionToActiveIfInitiated(sessionId);
+
+    return event;
   }
 
   async getSessionWithEvents(
@@ -104,7 +97,6 @@ export class SessionService {
   }
 
   async completeSession(sessionId: string): Promise<ConversationSession> {
-    // first get session using sessionId from redis if not exist then get from DB 
     const existing = await this.sessionRepository.findBySessionId(sessionId);
     if (!existing) {
       throw new NotFoundException(`Session ${sessionId} not found`);
@@ -124,7 +116,7 @@ export class SessionService {
     if (!updated) {
       throw new NotFoundException(`Session ${sessionId} not found`);
     }
-    // remove sessionId from redis
+
     return updated;
   }
 }

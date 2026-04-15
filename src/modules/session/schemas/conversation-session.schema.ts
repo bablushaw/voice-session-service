@@ -9,6 +9,9 @@ export type ConversationSessionDocument = HydratedDocument<ConversationSession>;
   timestamps: false,
 })
 export class ConversationSession {
+  /** MongoDB document id (ObjectId). */
+  @Prop({ type: Types.ObjectId })
+  _id: Types.ObjectId;
 
   @Prop({ required: true, unique: true, index: true })
   sessionId: string;
@@ -17,6 +20,7 @@ export class ConversationSession {
     required: true,
     enum: SessionStatus,
     default: SessionStatus.INITIATED,
+    index: true,
   })
   status: SessionStatus;
 
@@ -38,5 +42,3 @@ export class ConversationSession {
 }
 
 export const ConversationSessionSchema = SchemaFactory.createForClass(ConversationSession);
-// add status index
-ConversationSessionSchema.index({ status: 1 });
